@@ -20,6 +20,10 @@ export {
 } from '@codemirror/commands';
 
 export {
+  indentUnit,
+} from '@codemirror/language';
+
+export {
   lintGutter,
   setDiagnostics,
 } from '@codemirror/lint';

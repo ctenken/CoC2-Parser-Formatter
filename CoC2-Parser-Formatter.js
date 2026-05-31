@@ -10,6 +10,9 @@ import {
   history, defaultKeymap, historyKeymap, indentWithTab
 } from './dist/cm6-bundle.js';
 import {
+  indentUnit as codeMirrorIndentUnit,
+} from './dist/cm6-bundle.js';
+import {
   lintGutter, setDiagnostics
 } from './dist/cm6-bundle.js';
 
@@ -241,6 +244,19 @@ function leadingColumns(text) {
   return Math.min(columns, MAX_WRAP_INDENT);
 }
 
+function previousIndentColumns(doc, lineNumber) {
+  for (let number = lineNumber - 1; number >= 1; number--) {
+    const text = doc.line(number).text;
+    if (text.length === 0) continue;
+    return leadingColumns(text);
+  }
+  return 0;
+}
+
+function guideColumns(columns) {
+  return Math.floor(columns / WRAP_TAB_COLUMNS) * WRAP_TAB_COLUMNS;
+}
+
 function buildWrapIndentDecorations(view) {
   const marks = [];
   for (const { from, to } of view.visibleRanges) {
@@ -260,11 +276,45 @@ function buildWrapIndentDecorations(view) {
   return Decoration.set(marks, true);
 }
 
+function buildIndentGuideDecorations(view) {
+  const marks = [];
+  let activeIndent = 0;
+  for (const { from, to } of view.visibleRanges) {
+    for (let pos = from; pos <= to;) {
+      const line = view.state.doc.lineAt(pos);
+      const lineIndent = leadingColumns(line.text);
+      if (lineIndent > 0) activeIndent = lineIndent;
+      else if (line.text.trim() !== '') activeIndent = 0;
+
+      const rawGuideWidth = lineIndent || (line.text.length === 0 ? activeIndent || previousIndentColumns(view.state.doc, line.number) : 0);
+      const guideWidth = guideColumns(rawGuideWidth);
+      if (guideWidth > 0) {
+        marks.push(Decoration.line({
+          attributes: {
+            class: 'cm-indentGuideLine',
+            style: `--indent-guide-width:${guideWidth}ch;`,
+          },
+        }).range(line.from));
+      }
+      pos = line.to + 1;
+    }
+  }
+  return Decoration.set(marks, true);
+}
+
 const wrapIndentPlugin = ViewPlugin.fromClass(class {
   constructor(view) { this.decorations = buildWrapIndentDecorations(view); }
   update(update) {
     if (update.docChanged || update.viewportChanged)
       this.decorations = buildWrapIndentDecorations(update.view);
+  }
+}, { decorations: v => v.decorations });
+
+const indentGuidePlugin = ViewPlugin.fromClass(class {
+  constructor(view) { this.decorations = buildIndentGuideDecorations(view); }
+  update(update) {
+    if (update.docChanged || update.viewportChanged)
+      this.decorations = buildIndentGuideDecorations(update.view);
   }
 }, { decorations: v => v.decorations });
 
@@ -306,9 +356,11 @@ const view = new EditorView({
     highlightActiveLineGutter(),
     lineNumbers(),
     lintGutter(),
+    codeMirrorIndentUnit.of('    '),
     keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap]),
     placeholder('Paste your text here and click Format.'),
     wrapIndentPlugin,
+    indentGuidePlugin,
     depthPlugin,
     selectedTextPlugin,
     EditorView.updateListener.of(update => {
