@@ -141,6 +141,49 @@ function splitOnTopLevelPipes(str) {
   return parts;
 }
 
+function compactWhitespace(text) {
+  return text
+    .replace(/^[ \t]+/, '')
+    .replace(/[\r\n]+[ \t]*/g, '');
+}
+
+function compressTextify(inner, startLine, compactResult = false) {
+  let result = '', i = 0, line = startLine;
+  while (i < inner.length) {
+    const ch = inner[i];
+    const pair = openingPair(ch);
+    if (pair) {
+      const { formatted, endIndex, line: newLine } = compressBracket(inner, i, line, pair);
+      result += formatted; i = endIndex + 1; line = newLine;
+    } else if (closingPair(ch)) {
+      throw new Error(`Unmatched '${ch}' at line ${line}`);
+    } else {
+      result += ch;
+      if (ch === '\n') line++;
+      i++;
+    }
+  }
+  return { result: compactResult ? compactWhitespace(result) : result, line };
+}
+
+function compressBracket(str, startIndex, startLine, pair) {
+  const openLine = startLine;
+  let i = startIndex + 1, depth = 1, content = '', line = startLine;
+  while (i < str.length && depth > 0) {
+    const ch = str[i];
+    if (ch === pair.open) depth++;
+    else if (ch === pair.close) depth--;
+    if (depth > 0) { content += ch; if (ch === '\n') line++; }
+    else if (ch === '\n') line++;
+    i++;
+  }
+  if (depth !== 0) throw new Error(`Unmatched '${pair.open}' at line ${openLine}`);
+  const endIndex = i - 1;
+  const parts = splitOnTopLevelPipes(content);
+  const compressed = parts.map(part => compressTextify(part, openLine, true).result);
+  return { formatted: pair.open + compressed.join('|') + pair.close, endIndex, line };
+}
+
 function processContent(content) {
   content = content.replace(/\r\n/g, '\n');
   const errors = [];
@@ -186,6 +229,59 @@ function processContent(content) {
         const closingIndent = /^\r?\n/.test(inner) ? leadingIndent : '';
         const body = closingIndent ? formatted.replace(/\n*$/, '\n') : formatted;
         result += `${leadingIndent}${prefix}textify\`${body}${closingIndent}\``;
+      } catch (err) {
+        const m = err.message.match(/line (\d+)/);
+        errors.push({ line: m ? parseInt(m[1]) : blockLine, message: err.message });
+        result += full;
+      }
+    }
+  }
+  return { result, errors };
+}
+
+function compressContent(content) {
+  content = content.replace(/\r\n/g, '\n');
+  const errors = [];
+  if (!/textify`/.test(content)) {
+    try {
+      const { result } = compressTextify(content, 1);
+      return { result, errors };
+    } catch (err) {
+      const m = err.message.match(/line (\d+)/);
+      errors.push({ line: m ? parseInt(m[1]) : 1, message: err.message });
+      return { result: content, errors };
+    }
+  }
+  const segments = [];
+  const blockRe = /^([ \t]*)(.*?)textify`([\s\S]*?)`/gm;
+  let lastIndex = 0, match;
+  while ((match = blockRe.exec(content)) !== null) {
+    if (match.index > lastIndex)
+      segments.push({ type: 'prose', text: content.slice(lastIndex, match.index), offset: lastIndex });
+    segments.push({ type: 'textify', match, offset: match.index });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < content.length)
+    segments.push({ type: 'prose', text: content.slice(lastIndex), offset: lastIndex });
+
+  let result = '';
+  for (const seg of segments) {
+    if (seg.type === 'prose') {
+      const segLine = content.slice(0, seg.offset).split('\n').length;
+      try {
+        const { result: compressed } = compressTextify(seg.text, segLine);
+        result += compressed;
+      } catch (err) {
+        const m = err.message.match(/line (\d+)/);
+        errors.push({ line: m ? parseInt(m[1]) : segLine, message: err.message });
+        result += seg.text;
+      }
+    } else {
+      const [full, leadingIndent, prefix, inner] = seg.match;
+      const blockLine = content.slice(0, seg.offset).split('\n').length;
+      try {
+        const { result: compressed } = compressTextify(inner, blockLine);
+        result += `${leadingIndent}${prefix}textify\`${compressed}\``;
       } catch (err) {
         const m = err.message.match(/line (\d+)/);
         errors.push({ line: m ? parseInt(m[1]) : blockLine, message: err.message });
@@ -482,6 +578,23 @@ window.runFormat = function () {
   view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: result } });
   saveState();
   showStatus(changed ? 'Formatted successfully.' : 'Already formatted — no changes needed.', 'ok');
+};
+
+window.runCompress = function () {
+  const text = view.state.doc.toString();
+  if (!text.trim()) { showStatus('Nothing to compress.', 'err'); return; }
+  const { result, errors } = compressContent(text);
+  if (errors.length > 0) {
+    applyErrors(errors);
+    showStatus(`${errors.length} error${errors.length > 1 ? 's' : ''} found${errorLineSummary(errors)} — see annotations.`, 'err');
+    return;
+  }
+  clearErrors();
+  const normalized = text.replace(/\r\n/g, '\n');
+  const changed = result !== normalized;
+  view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: result } });
+  saveState();
+  showStatus(changed ? 'Compressed successfully.' : 'Already compressed — no changes needed.', 'ok');
 };
 
 window.copyText = function () {

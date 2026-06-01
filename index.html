@@ -180,7 +180,7 @@
   }
   .toolbar-field input {
     width: 3.4rem;
-    height: 1.9rem;
+    min-height: 2.15rem;
     padding: 0.5vh 0.55rem;
     border-radius: var(--radius);
     border: 1px solid var(--border);
@@ -198,7 +198,7 @@
   }
   .font-size-step {
     width: 1.8rem;
-    height: 1.9rem;
+    min-height: 2.15rem;
     justify-content: center;
     padding-inline: 0;
     font-size: clamp(0.8rem, 0.9vw, 1rem);
@@ -207,6 +207,7 @@
   button {
     display: inline-flex;
     align-items: center;
+    min-height: 2.15rem;
     gap: 0.4vw;
     padding: 0.5vh 1.1vw;
     border-radius: var(--radius);
@@ -473,9 +474,9 @@
     .toolbar-buttons { display: flex; flex-wrap: wrap; width: 100%; gap: 1.5vw; }
     .toolbar-field { flex-shrink: 0; font-size: clamp(0.6rem, 2.4vw, 0.78rem); }
     .font-size-control { gap: 0.35rem; }
-    .toolbar-field input { width: 3.4rem; padding: 0.6vh 0.45rem; }
-    .font-size-step { width: 1.8rem; padding-inline: 0; }
-    button { padding: 0.6vh 2vw; font-size: clamp(0.6rem, 2.4vw, 0.78rem); flex-shrink: 0; }
+    .toolbar-field input { width: 3.4rem; min-height: 2.15rem; padding: 0.6vh 0.45rem; }
+    .font-size-step { width: 1.8rem; min-height: 2.15rem; padding-inline: 0; }
+    button { min-height: 2.15rem; padding: 0.6vh 2vw; font-size: clamp(0.6rem, 2.4vw, 0.78rem); flex-shrink: 0; }
     .char-count { flex-shrink: 0; font-size: clamp(0.72rem, 2.8vw, 0.9rem); line-height: 1; padding: 0; white-space: nowrap; }
     .cm-lineNumbers .cm-gutterElement {
       padding-right: 0.12rem !important;
@@ -515,6 +516,10 @@
       <button class="primary" onclick="runFormat()">
         <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h14"/></svg>
         Format
+      </button>
+      <button class="primary" onclick="runCompress()" title="Compress parser formatting">
+        <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16"/><path d="M8 4l-4 4 4 4"/><path d="M20 16H4"/><path d="M16 12l4 4-4 4"/></svg>
+        Compress
       </button>
       <div class="toolbar-field" title="Editor font size">
         <span class="font-size-control">
