@@ -18,7 +18,7 @@ import {
 
 // ─── Formatter core (unchanged) ───────────────────────────────────────────────
 
-let indentUnit = '\t';
+let indentUnit = '    ';
 let curlyFormatOn = true;
 function isWhitespace(ch) { return ch === ' ' || ch === '\t' || ch === '\r'; }
 
@@ -141,10 +141,29 @@ function splitOnTopLevelPipes(str) {
   return parts;
 }
 
+// function findTopLevelPipes(str, offsetLine) {
+//   const errors = [];
+//   const stack = [];
+//   let line = offsetLine;
+//   for (let i = 0; i < str.length; i++) {
+//     const ch = str[i];
+//     if (ch === '\n') { line++; continue; }
+//     const opener = openingPair(ch);
+//     const closer = closingPair(ch);
+//     if (opener) stack.push(opener.close);
+//     else if (closer && stack[stack.length - 1] === ch) stack.pop();
+//     else if (ch === '|' && stack.length === 0) {
+//       errors.push({ line, message: "Pipe character '|' outside of brackets" });
+//     }
+//   }
+//   return errors;
+// }
+
 function compactWhitespace(text) {
   return text
     .replace(/^[ \t]+/, '')
-    .replace(/[\r\n]+[ \t]*/g, '');
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/\n{3,}/g, '\n\n');
 }
 
 function compressTextify(inner, startLine, compactResult = false) {
@@ -180,12 +199,22 @@ function compressBracket(str, startIndex, startLine, pair) {
   if (depth !== 0) throw new Error(`Unmatched '${pair.open}' at line ${openLine}`);
   const endIndex = i - 1;
   const parts = splitOnTopLevelPipes(content);
-  const compressed = parts.map(part => compressTextify(part, openLine, true).result);
-  return { formatted: pair.open + compressed.join('|') + pair.close, endIndex, line };
+  const compressed = parts.map((part, idx) => {
+    // Compress without compacting first, then compact carefully.
+    // Only strip leading whitespace from the qualifier (first part);
+    // for other parts, leading whitespace is content after a pipe.
+    const raw = compressTextify(part, openLine, false).result;
+    let compacted = raw.replace(/\n[ \t]+/g, '\n');
+    if (idx === 0) compacted = compacted.replace(/^[ \t]+/, '');
+    return compacted;
+  });
+  const inner = compressed.map(p => p.replace(/^\n/, '').replace(/\n\s*$/, '')).join('|');
+  return { formatted: pair.open + inner + pair.close, endIndex, line };
 }
 
 function processContent(content) {
   content = content.replace(/\r\n/g, '\n');
+  // const errors = [...findTopLevelPipes(content, 1)];
   const errors = [];
   if (!/textify`/.test(content)) {
     try {
@@ -241,6 +270,7 @@ function processContent(content) {
 
 function compressContent(content) {
   content = content.replace(/\r\n/g, '\n');
+  // const errors = [...findTopLevelPipes(content, 1)];
   const errors = [];
   if (!/textify`/.test(content)) {
     try {
