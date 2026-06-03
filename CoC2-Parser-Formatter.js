@@ -340,7 +340,7 @@ function buildDepthDecorations(doc) {
 
   function flush(end) {
     if (runStart >= end || runDepth === 0) { runStart = end; return; }
-    marks.push(Decoration.mark({ class: `bd${Math.min(runDepth, 16)}` }).range(runStart, end));
+    marks.push(Decoration.mark({ class: `bd${Math.min(runDepth, 32)}` }).range(runStart, end));
     runStart = end;
   }
 
@@ -352,11 +352,11 @@ function buildDepthDecorations(doc) {
     if (opener) {
       flush(i);
       stack.push(opener.close);
-      marks.push(Decoration.mark({ class: `bd${Math.min(stack.length, 16)}` }).range(i, i + 1));
+      marks.push(Decoration.mark({ class: `bd${Math.min(stack.length, 32)}` }).range(i, i + 1));
       runStart = i + 1; runDepth = stack.length;
     } else if (closer) {
       flush(i);
-      marks.push(Decoration.mark({ class: `bd${Math.min(stack.length, 16)}` }).range(i, i + 1));
+      marks.push(Decoration.mark({ class: `bd${Math.min(stack.length, 32)}` }).range(i, i + 1));
       if (stack[stack.length - 1] === ch) stack.pop();
       runStart = i + 1; runDepth = stack.length;
     } else if (ch === '\n') {
@@ -917,6 +917,7 @@ function applySearchQuery(preservePos = false) {
       caseSensitive: searchCaseSensitive,
       regexp: searchUseRegex,
       wholeWord: false,
+      literal: true,
     });
   } catch (e) {
     updateSearchCount();
