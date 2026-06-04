@@ -95,7 +95,7 @@ function processBracket(str, startIndex, bracketIndent, startLine, pair) {
   for (const choice of choices) {
     const { result: body, line: afterLine } = formatChoiceContent(choice, innerIndent, choiceLine);
     choiceLine = afterLine;
-    formatted += innerIndent + '|' + body.replace(/[\r\n]+$/, '') + '\n';
+    formatted += innerIndent + '|' + body.replace(/\n$/, '') + '\n';
   }
   formatted += bracketIndent + pair.close;
   return { formatted, endIndex, line };
@@ -213,11 +213,25 @@ function compressBracket(str, startIndex, startLine, pair) {
     // Only strip leading whitespace from the qualifier (first part);
     // for other parts, leading whitespace is content after a pipe.
     const raw = compressTextify(part, openLine, false).result;
-    let compacted = raw.replace(/\n[ \t]+/g, '\n');
+    let compacted = raw.replace(/\n[ \t]*/g, '\n');
     if (idx === 0) compacted = compacted.replace(/^[ \t]+/, '');
     return compacted;
   });
-  const inner = compressed.map(p => p.replace(/^\n/, '').replace(/\n\s*$/, '')).join('|');
+  
+  const inner = compressed.map((p, idx) => {
+    let s = idx === 0 ? p.replace(/^\n/, '') : p;
+    // strip ALL trailing whitespace (spaces, tabs, newlines) before the first pipe.
+    if (idx === 0 && compressed.length > 1) {
+      return s.replace(/\s+$/, '');
+    }
+    // Only strip the newline if it is a single formatting newline. 
+    // This preserves both intentional trailing spaces and multiple newlines.
+    if (s.endsWith('\n') && !s.endsWith('\n\n')) {
+      return s.slice(0, -1);
+    }
+    return s;
+  }).join('|');
+  
   return { formatted: pair.open + inner + pair.close, endIndex, line };
 }
 
@@ -393,7 +407,7 @@ const depthPlugin = ViewPlugin.fromClass(class {
 // ─── Wrapped-line indentation ─────────────────────────────────────────────────
 
 const WRAP_TAB_COLUMNS = 4;
-const MAX_WRAP_INDENT = 80;
+const MAX_WRAP_INDENT = 400;
 
 function leadingColumns(text) {
   let columns = 0;
@@ -427,7 +441,10 @@ function buildWrapIndentDecorations(view) {
       if (indent > 0) {
         marks.push(Decoration.line({
           attributes: {
-            style: `padding-left:${indent}ch;text-indent:-${indent}ch;`,
+            style: `
+              padding-left:calc(${indent}ch + 0.38rem);
+              text-indent:-${indent}ch;
+            `,
           },
         }).range(line.from));
       }
