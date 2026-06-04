@@ -4,8 +4,8 @@ A browser-based formatter and compressor for CoC2 parser syntax, using a CodeMir
 
 ## Features
 
-- **Format** — expands and indents bracket structures (`[` and `{`) for readability
-- **Compress** — collapses formatted syntax back to a single line
+- **Format** — expands and indents bracket structures (`[]` and `{}`) for readability
+- **Compress** — collapses formatted syntax
 - **Bracket depth highlighting** — 32 colors indicate nesting depth at a glance
 - **Find & Replace** — literal search with case, and regex options, replace with replace and replace all options
 - **Word / char / bracket counts** — live counts with unbalanced bracket warnings
