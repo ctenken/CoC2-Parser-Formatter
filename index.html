@@ -307,6 +307,13 @@
     line-height: 1.75 !important;
     overflow: auto !important;
   }
+  .cm-scroller::-webkit-scrollbar { width: 10px; height: 10px; }
+  .cm-scroller::-webkit-scrollbar-track { background: #0e0c0a; }
+  .cm-scroller::-webkit-scrollbar-thumb { background: #3d3730; border-radius: 5px; border: 2px solid #0e0c0a; }
+  .cm-scroller::-webkit-scrollbar-thumb:hover { background: #5a524a; }
+  [data-theme="light"] .cm-scroller::-webkit-scrollbar-track { background: #e0dbd4; }
+  [data-theme="light"] .cm-scroller::-webkit-scrollbar-thumb { background: #a09080; border-color: #e0dbd4; }
+  [data-theme="light"] .cm-scroller::-webkit-scrollbar-thumb:hover { background: #7a7068; }
   .cm-content {
     padding: 2vh 0.75rem 2vh 0 !important;
     caret-color: var(--accent) !important;
