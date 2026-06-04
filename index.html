@@ -489,7 +489,7 @@
   .search-panel {
     position: fixed;
     top: 0.4rem;
-    right: 2vw;
+    right: max(2vw, 0.5rem);
     z-index: 50;
     background: var(--surface);
     border: 1px solid var(--border);
@@ -500,6 +500,7 @@
     flex-direction: row;
     gap: 0.35rem;
     min-width: 360px;
+    max-width: calc(100vw - 1rem);
     font-family: var(--mono);
     font-size: clamp(0.65rem, 0.75vw, 0.85rem);
   }
@@ -646,6 +647,17 @@
     .char-count { flex-shrink: 0; font-size: clamp(0.72rem, 2.8vw, 0.9rem); line-height: 1; padding: 0; white-space: nowrap; }
     .cm-lineNumbers .cm-gutterElement {
       padding-right: 0.12rem !important;
+    }
+    .search-panel {
+      min-width: 0;
+      width: calc(100vw - 1rem);
+    }
+    .search-panel input[type="text"] {
+      width: 0;
+      flex: 1 1 0;
+    }
+    .search-panel-count {
+      min-width: 2.5rem;
     }
   }
 </style>
