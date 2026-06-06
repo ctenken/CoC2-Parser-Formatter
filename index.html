@@ -73,6 +73,9 @@
     --d21:#2a4a00;--d22:#5a005a;--d23:#004a5a;--d24:#6a3a3a;
     --d25:#003a4a;--d26:#4a3a00;--d27:#1a4a4a;--d28:#5a1a4a;
     --d29:#2a5a00;--d30:#4a1a5a;--d31:#005a5a;--d32:#5a3a1a;
+
+    --indent-marker: rgba(240, 236, 230, 0.32);
+    --indent-marker-active: rgba(240, 236, 230, 0.55);
   }
 
   [data-theme="light"] {
@@ -100,6 +103,9 @@
     --d21:#66ffaa;--d22:#ffaa88;--d23:#88ffee;--d24:#ff9966;
     --d25:#99aaff;--d26:#ccff66;--d27:#ff66aa;--d28:#66ffdd;
     --d29:#ffbb66;--d30:#aa66ff;--d31:#66ffbb;--d32:#ff8899;
+
+    --indent-marker: rgba(28, 25, 23, 0.22);
+    --indent-marker-active: rgba(28, 25, 23, 0.40);
   }
 
   html, body { height: 100%; overflow: hidden; }
@@ -320,37 +326,6 @@
     min-height: 100%;
     overflow-wrap: anywhere;
     tab-size: 4;
-  }
-  .cm-indentGuideLine {
-    position: relative;
-  }
-  .cm-indentGuideLine::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0.38;
-    width: var(--indent-guide-width, 0);
-    pointer-events: none;
-    background-image:
-      repeating-linear-gradient(
-        to right,
-        transparent 0,
-        transparent calc(4ch - 1px),
-        rgba(255,255,255,0.18) calc(4ch - 1px),
-        rgba(255,255,255,0.18) 4ch
-      );
-    z-index: 0;
-  }
-  [data-theme="light"] .cm-indentGuideLine::before {
-    background-image:
-      repeating-linear-gradient(
-        to right,
-        transparent 0,
-        transparent calc(4ch - 1px),
-        rgba(0,0,0,0.2) calc(4ch - 1px),
-        rgba(0,0,0,0.2) 4ch
-      );
   }
 
   /* Gutters */

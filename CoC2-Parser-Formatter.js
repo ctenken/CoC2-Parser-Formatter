@@ -11,7 +11,9 @@ import {
   getSearchQuery,
   highlightActiveLine, highlightActiveLineGutter,
   history,
-  historyKeymap, indentWithTab,
+  historyKeymap,
+  indentationMarkers,
+  indentWithTab,
   keymap,
   lineNumbers,
   lintGutter,
@@ -22,7 +24,7 @@ import {
   SearchQuery,
   setDiagnostics,
   setSearchQuery,
-  ViewPlugin,
+  ViewPlugin
 } from './dist/cm6-bundle.js';
 
 // ─── Formatter core (unchanged) ───────────────────────────────────────────────
@@ -454,31 +456,6 @@ function buildWrapIndentDecorations(view) {
   return Decoration.set(marks, true);
 }
 
-function buildIndentGuideDecorations(view) {
-  const marks = [];
-  let activeIndent = 0;
-  for (const { from, to } of view.visibleRanges) {
-    for (let pos = from; pos <= to;) {
-      const line = view.state.doc.lineAt(pos);
-      const lineIndent = leadingColumns(line.text);
-      if (lineIndent > 0) activeIndent = lineIndent;
-      else if (line.text.trim() !== '') activeIndent = 0;
-
-      const rawGuideWidth = lineIndent || (line.text.length === 0 ? activeIndent || previousIndentColumns(view.state.doc, line.number) : 0);
-      const guideWidth = guideColumns(rawGuideWidth);
-      if (guideWidth > 0) {
-        marks.push(Decoration.line({
-          attributes: {
-            class: 'cm-indentGuideLine',
-            style: `--indent-guide-width:${guideWidth}ch;`,
-          },
-        }).range(line.from));
-      }
-      pos = line.to + 1;
-    }
-  }
-  return Decoration.set(marks, true);
-}
 
 const wrapIndentPlugin = ViewPlugin.fromClass(class {
   constructor(view) { this.decorations = buildWrapIndentDecorations(view); }
@@ -488,13 +465,6 @@ const wrapIndentPlugin = ViewPlugin.fromClass(class {
   }
 }, { decorations: v => v.decorations });
 
-const indentGuidePlugin = ViewPlugin.fromClass(class {
-  constructor(view) { this.decorations = buildIndentGuideDecorations(view); }
-  update(update) {
-    if (update.docChanged || update.viewportChanged)
-      this.decorations = buildIndentGuideDecorations(update.view);
-  }
-}, { decorations: v => v.decorations });
 
 // ─── Selected text coloring ───────────────────────────────────────────────────
 
@@ -602,7 +572,18 @@ const view = new EditorView({
     search({ createPanel: () => ({ dom: document.createElement('div'), mount() {}, destroy() {} }) }),
     placeholder('Paste your text here and click Format.'),
     wrapIndentPlugin,
-    indentGuidePlugin,
+    indentationMarkers({
+      highlightActiveBlock: true,
+      hideFirstIndent: false,
+      markerType: 'fullScope',
+      thickness: 1,
+      colors: {
+        light: 'var(--indent-marker)',
+        dark:  'var(--indent-marker)',
+        activeLight: 'var(--indent-marker-active)',
+        activeDark:  'var(--indent-marker-active)',
+      },
+    }),
     depthPlugin,
     selectedTextPlugin,
     searchMatchPlugin,
