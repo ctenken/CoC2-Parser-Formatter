@@ -360,6 +360,12 @@ function buildDepthDecorations(doc) {
     runStart = end;
   }
 
+  // Advance position past any leading whitespace on a line
+  function skipIndent(pos) {
+    while (pos < text.length && (text[pos] === ' ' || text[pos] === '\t')) pos++;
+    return pos;
+  }
+
   const text = doc.toString();
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
@@ -377,7 +383,10 @@ function buildDepthDecorations(doc) {
       runStart = i + 1; runDepth = stack.length;
     } else if (ch === '\n') {
       flush(i);
-      runStart = i + 1;
+      // Skip the indentation on the next line so the indent markers
+      // (vertical guide lines) are not covered by the depth highlight.
+      runStart = skipIndent(i + 1);
+      i = runStart - 1; // -1 because the for-loop will i++
     }
   }
   flush(text.length);
